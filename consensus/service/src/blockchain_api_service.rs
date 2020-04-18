@@ -191,6 +191,7 @@ mod tests {
                     BLOCK_VERSION,
                     &parent.id,
                     block_index,
+                    parent.cumulative_txo_count + redacted_transactions.len() as u64,
                     &Default::default(),
                     &redacted_transactions,
                 ),
@@ -212,14 +213,32 @@ mod tests {
     // Quick sanity test of the `populate_db` test fixture.
     fn test_populate_db() {
         let mut ledger_db = create_db();
-        let n_transactions: u64 = 7;
-        let blocks = populate_db(&mut ledger_db, n_transactions);
+        let n_blocks: u64 = 7;
+        let blocks = populate_db(&mut ledger_db, n_blocks);
         for block in &blocks {
             println!("{:?}", block);
         }
 
-        assert_eq!(blocks.len(), n_transactions as usize);
+        assert_eq!(blocks.len(), n_blocks as usize);
     }
+
+    #[test]
+    // Check that the cumulative_txo_count is correct
+    fn test_populate_db() {
+        let mut ledger_db = create_db();
+        let n_blocks: u64 = 7;
+        let blocks = populate_db(&mut ledger_db, n_blocks);
+
+        let mut block_iter = blocks.iter();
+        let mut prev_cumulative_txo_count = 0u64;
+
+        for block in &blocks {
+            let num_txos = ledger_db.get_transactions_by_index(block.index).iter().map(...).fold(..., core::ops::Add);
+            assert_eq!(prev_cumulative_txo_count + num_txos, block.cumulative_txo_count);
+            prev_cumulative_txo_count = block.cumulative_txo_count;
+        }
+    }
+
 
     #[test_with_logger]
     // `get_last_block_info` should returns the last block.
